@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#090b18">
+<title>Shadow Runner — Endless Adventure</title>
+
+<style>
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#050711;
+  font-family:Arial,sans-serif;
+  color:white;
+  touch-action:none;
+}
+canvas{
+  display:block;
+  width:100%;
+  height:100%;
+}
+#ui{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+}
+.screen{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  background:linear-gradient(#050711cc,#080b18ee);
+  pointer-events:auto;
+}
+.hidden{display:none!important}
+
+h1{
+  margin:0 0 8px;
+  font-size:clamp(38px,9vw,78px);
+  letter-spacing:5px;
+  text-align:center;
+  color:#fff;
+  text-shadow:0 0 18px #7d5cff,0 0 45px #00eaff;
+}
+.subtitle{
+  color:#9da9d8;
+  margin-bottom:28px;
+  text-align:center;
+}
+button{
+  border:1px solid #5261a8;
+  background:linear-gradient(135deg,#18204c,#302067);
+  color:white;
+  padding:13px 28px;
+  margin:6px;
+  border-radius:12px;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 0 16px #4e43a555;
+}
+button:hover{
+  transform:scale(1.04);
+  box-shadow:0 0 25px #7467ff99;
+}
+.stats{
+  margin:12px;
+  padding:10px 18px;
+  border-radius:12px;
+  background:#10152dcc;
+  border:1px solid #343c70;
+  color:#dce1ff;
+}
+#hud{
+  position:absolute;
+  top:12px;
+  left:12px;
+  right:12px;
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:14px;
+  pointer-events:none;
+}
+.hudBox{
+  background:#080b18c9;
+  border:1px solid #414a7c;
+  padding:8px 11px;
+  border-radius:10px;
+  box-shadow:0 0 10px #0008;
+}
+#bossWrap{
+  position:absolute;
+  top:67px;
+  left:15%;
+  right:15%;
+  display:none;
+  text-align:center;
+}
+#bossName{
+  font-weight:bold;
+  color:#ff708d;
+  margin-bottom:4px;
+}
+#bossBar{
+  height:13px;
+  border:1px solid #ff5d79;
+  border-radius:20px;
+  background:#220914;
+  overflow:hidden;
+}
+#bossHP{
+  width:100%;
+  height:100%;
+  background:linear-gradient(90deg,#ff1744,#ff7a7a);
+}
+#message{
+  position:absolute;
+  top:22%;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:25px;
+  font-weight:bold;
+  text-align:center;
+  text-shadow:0 0 15px #fff;
+}
+#controls{
+  position:absolute;
+  bottom:18px;
+  left:0;
+  right:0;
+  display:flex;
+  justify-content:space-between;
+  padding:0 20px;
+  pointer-events:none;
+}
+.controlGroup{
+  display:flex;
+  gap:10px;
+}
+.control{
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#12182fd9;
+  border:1px solid #5964a5;
+  font-size:26px;
+  pointer-events:auto;
+  user-select:none;
+}
+.shop{
+  width:min(92%,500px);
+  max-height:75vh;
+  overflow:auto;
+  padding:15px;
+  background:#0b1024;
+  border:1px solid #3d477d;
+  border-radius:18px;
+}
+.item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:12px;
+  margin:8px 0;
+  background:#121936;
+  border-radius:12px;
+}
+.item small{color:#aeb7df}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="ui">
+
+  <!-- MAIN MENU -->
+  <div id="menu" class="screen">
+    <h1>SHADOW RUNNER</h1>
+    <div class="subtitle">ENDLESS ADVENTURE</div>
+
+    <div class="stats">
+      🪙 Coins: <span id="menuCoins">0</span>
+      &nbsp; | &nbsp;
+      🏆 Best: <span id="menuBest">0</span>
+    </div>
+
+    <button onclick="startGame()">▶ PLAY</button>
+    <button onclick="openShop()">🛒 SHOP</button>
+    <button onclick="openCharacters()">🎭 CHARACTERS</button>
+
+    <div class="subtitle">
+      Jump • Run • Fight • Collect • Survive
+    </div>
+  </div>
+
+  <!-- SHOP -->
+  <div id="shopScreen" class="screen hidden">
+    <h1 style="font-size:42px">SHOP</h1>
+
+    <div class="stats">
+      🪙 Coins: <span id="shopCoins">0</span>
+    </div>
+
+    <div class="shop">
+
+      <div class="item">
+        <div>
+          ❤️ Max Health
+          <br><small>Increase maximum health</small>
+        </div>
+        <button onclick="buyUpgrade('health')">
+          Upgrade
+        </button>
+      </div>
+
+      <div class="item">
+        <div>
+          ⚡ Speed
+          <br><small>Run faster</small>
+        </div>
+        <button onclick="buyUpgrade('speed')">
+          Upgrade
+        </button>
+      </div>
+
+      <div class="item">
+        <div>
+          💥 Attack
+          <br><small>Stronger attacks</small>
+        </div>
+        <button onclick="buyUpgrade('attack')">
+          Upgrade
+        </button>
+      </div>
+
+      <div class="item">
+        <div>
+          🛡 Shield
+          <br><small>Extra protection</small>
+        </div>
+        <button onclick="buyUpgrade('shield')">
+          Upgrade
+        </button>
+      </div>
+
+      <div class="stats">
+        Health Lv: <span id="shopHealth"></span><br>
+        Speed Lv: <span id="shopSpeed"></span><br>
+        Attack Lv: <span id="shopAttack"></span><br>
+        Shield Lv: <span id="shopShield"></span>
+      </div>
+
+    </div>
+
+    <button onclick="closeScreens()">← BACK</button>
+  </div>
+
+  <!-- CHARACTERS -->
+  <div id="characterScreen" class="screen hidden">
+    <h1 style="font-size:40px">CHARACTERS</h1>
+
+    <div class="shop">
+
+      <div class="item">
+        <div>🖤 Shadow<br><small>Balanced runner</small></div>
+        <button onclick="selectCharacter(0)">SELECT</button>
+      </div>
+
+      <div class="item">
+        <div>💜 Phantom<br><small>Fast runner</small></div>
+        <button onclick="selectCharacter(1)">300 🪙</button>
+      </div>
+
+      <div class="item">
+        <div>💛 Blaze<br><small>Powerful runner</small></div>
+        <button onclick="selectCharacter(2)">700 🪙</button>
+      </div>
+
+    </div>
+
+    <button onclick="closeScreens()">← BACK</button>
+  </div>
+
+  <!-- GAME HUD -->
+  <div id="hud" class="hidden">
+    <div class="hudBox">
+      ❤️ <span id="healthText">3</span>
+    </div>
+
+    <div class="hudBox">
+      ⭐ <span id="scoreText">0</span>
+    </div>
+
+    <div class="hudBox">
+      🪙 <span id="coinText">0</span>
+    </div>
+
+    <div class="hudBox">
+      🌎 <span id="worldText">1</span>
+    </div>
+
+    <button style="pointer-events:auto;padding:8px 12px"
+            onclick="pauseGame()">Ⅱ</button>
+  </div>
+
+  <!-- BOSS -->
+  <div id="bossWrap">
+    <div id="bossName">👑 SHADOW LORD</div>
+    <div id="bossBar">
+      <div id="bossHP"></div>
+    </div>
+  </div>
+
+  <div id="message"></div>
+
+  <!-- CONTROLS -->
+  <div id="controls" class="hidden">
+
+    <div class="controlGroup">
+      <div class="control" id="leftBtn">◀</div>
+      <div class="control" id="rightBtn">▶</div>
+    </div>
+
+    <div class="controlGroup">
+      <div class="control" id="attackBtn">⚔</div>
+      <div class="control" id="jumpBtn">⬆</div>
+    </div>
+
+  </div>
+
+  <!-- PAUSE -->
+  <div id="pauseScreen" class="screen hidden">
+    <h1 style="font-size:50px">PAUSED</h1>
+    <button onclick="resumeGame()">▶ RESUME</button>
+    <button onclick="restartGame()">🔄 RESTART</button>
+    <button onclick="goMenu()">🏠 MENU</button>
+  </div>
+
+  <!-- GAME OVER -->
+  <div id="gameOver" class="screen hidden">
+    <h1 style="font-size:48px">GAME OVER</h1>
+
+    <div class="stats">
+      ⭐ Score: <span id="finalScore">0</span><br>
+      🪙 Coins: <span id="finalCoins">0</span><br>
+      🏆 Best: <span id="finalBest">0</span>
+    </div>
+
+    <button onclick="restartGame()">🔄 PLAY AGAIN</button>
+    <button onclick="goMenu()">🏠 MENU</button>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+/* =========================
+   SAVE SYSTEM
+========================= */
+
+const SAVE_KEY="shadowRunnerSave";
+
+let save=JSON.parse(localStorage.getItem(SAVE_KEY)||"null")||{
+  coins:0,
+  best:0,
+  health:1,
+  speed:1,
+  attack:1,
+  shield:1,
+  character:0,
+  unlocked:[0]
+};
+
+function saveGame(){
+  localStorage.setItem(SAVE_KEY,JSON.stringify(save));
+}
+
+/* =========================
+   CANVAS
+========================= */
+
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+let W=innerWidth;
+let H=innerHeight;
+
+function resize(){
+  W=canvas.width=innerWidth;
+  H=canvas.height=innerHeight;
+}
+addEventListener("resize",resize);
+resize();
+
+/* =========================
+   GAME STATE
+========================= */
+
+let running=false;
+let paused=false;
+let gameOver=false;
+
+let score=0;
+let runCoins=0;
+let distance=0;
+let world=1;
+let speed=5;
+
+let player;
+let platforms=[];
+let enemies=[];
+let coins=[];
+let gems=[];
+let particles=[];
+let powerups=[];
+let projectiles=[];
+let boss=null;
+
+let spawnTimer=0;
+let coinTimer=0;
+let enemyTimer=0;
+let powerTimer=0;
+
+let cameraX=0;
+let messageTimer=0;
+
+/* =========================
+   INPUT
+========================= */
+
+const keys={};
+
+addEventListener("keydown",e=>{
+  keys[e.key.toLowerCase()]=true;
+
+  if([" ","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase()))
+    e.preventDefault();
+
+  if(e.key===" "||e.key.toLowerCase()==="w"||e.key==="ArrowUp")
+    jump();
+
+  if(e.key.toLowerCase()==="j"||e.key.toLowerCase()==="x")
+    attack();
+
+  if(e.key.toLowerCase()==="p")
+    pauseGame();
+});
+
+addEventListener("keyup",e=>{
+  keys[e.key.toLowerCase()]=false;
+});
+
+/* TOUCH */
+
+function holdButton(id,key){
+  const b=document.getElementById(id);
+
+  b.addEventListener("pointerdown",e=>{
+    e.preventDefault();
+    keys[key]=true;
+  });
+
+  b.addEventListener("pointerup",e=>{
+    e.preventDefault();
+    keys[key]=false;
+  });
+
+  b.addEventListener("pointercancel",()=>{
+    keys[key]=false;
+  });
+
+  b.addEventListener("pointerleave",()=>{
+    keys[key]=false;
+  });
+}
+
+holdButton("leftBtn","arrowleft");
+holdButton("rightBtn","arrowright");
+
+document.getElementById("jumpBtn").addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  jump();
+});
+
+document.getElementById("attackBtn").addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  attack();
+});
+
+/* =========================
+   PLAYER
+========================= */
+
+function createPlayer(){
+
+  const chars=[
+    {color:"#d8e1ff",glow:"#7d5cff",speed:6,damage:1},
+    {color:"#d59cff",glow:"#d34cff",speed:7,damage:1},
+    {color:"#ffe18a",glow:"#ff9d00",speed:6,damage:2}
+  ];
+
+  const c=chars[save.character];
+
+  return{
+    x:W*.25,
+    y:H*.5,
+    w:38,
+    h:62,
+    vx:0,
+    vy:0,
+    jumps:0,
+    maxJumps:2,
+    grounded:false,
+    hp:3+save.health,
+    maxHp:3+save.health,
+    color:c.color,
+    glow:c.glow,
+    baseSpeed:c.speed+save.speed*.35,
+    damage:c.damage+save.attack,
+    shield:save.shield,
+    attackCooldown:0,
+    invincible:0,
+    power:null,
+    powerTimer:0
+  };
+}
+
+/* =========================
+   WORLD
+========================= */
+
+function makePlatform(x,y,w,h=35){
+  return{x,y,w,h};
+}
+
+function resetWorld(){
+
+  platforms=[];
+
+  platforms.push(
+    makePlatform(-500,H-80,1000,100)
+  );
+
+  let x=500;
+
+  for(let i=0;i<80;i++){
+
+    const gap=50+Math.random()*90;
+    const width=150+Math.random()*220;
+
+    x+=gap;
+
+    const y=H-80-Math.random()*120;
+
+    platforms.push(
+      makePlatform(x,y,width,35)
+    );
+
+    x+=width;
+  }
+}
+
+/* =========================
+   START GAME
+========================= */
+
+function startGame(){
+
+  document.getElementById("menu").classList.add("hidden");
+  document.getElementById("gameOver").classList.add("hidden");
+  document.getElementById("pauseScreen").classList.add("hidden");
+
+  document.getElementById("hud").classList.remove("hidden");
+  document.getElementById("controls").classList.remove("hidden");
+
+  score=0;
+  runCoins=0;
+  distance=0;
+  world=1;
+
+  enemies=[];
+  coins=[];
+  gems=[];
+  particles=[];
+  powerups=[];
+  projectiles=[];
+  boss=null;
+
+  speed=5;
+
+  resetWorld();
+
+  player=createPlayer();
+
+  running=true;
+  paused=false;
+  gameOver=false;
+
+  showMessage("🌑 SHADOW RUNNER",130);
+
+  updateHUD();
+}
+
+/* =========================
+   PLAYER ACTIONS
+========================= */
+
+function jump(){
+
+  if(!running||paused||gameOver)return;
+
+  if(player.jumps<player.maxJumps){
+
+    player.vy=-13;
+
+    player.jumps++;
+
+    burst(
+      player.x+player.w/2,
+      player.y+player.h,
+      "#7d5cff",
+      8
+    );
+  }
+}
+
+function attack(){
+
+  if(!running||paused||gameOver)return;
+
+  if(player.attackCooldown>0)return;
+
+  player.attackCooldown=Math.max(
+    12,
+    25-save.attack*2
+  );
+
+  projectiles.push({
+    x:player.x+player.w,
+    y:player.y+player.h*.45,
+    vx:11,
+    life:60,
+    damage:player.damage
+  });
+
+  burst(
+    player.x+player.w,
+    player.y+player.h*.45,
+    "#8df6ff",
+    4
+  );
+}
+
+/* =========================
+   SPAWN ENEMIES
+========================= */
+
+function spawnEnemy(){
+
+  const r=Math.random();
+
+  let type;
+
+  if(r<.55) type="crawler";
+  else if(r<.82) type="flyer";
+  else type="brute";
+
+  const x=player.x+W+100;
+
+  if(type==="crawler"){
+
+    enemies.push({
+      type,
+      x,
+      y:H-145,
+      w:42,
+      h:45,
+      hp:2+Math.floor(world*.3),
+      maxHp:2+Math.floor(world*.3),
+      vx:-1.5
+    });
+
+  }else if(type==="flyer"){
+
+    enemies.push({
+      type,
+      x,
+      y:H-300-Math.random()*130,
+      w:48,
+      h:35,
+      hp:3+Math.floor(world*.4),
+      maxHp:3+Math.floor(world*.4),
+      vx:-2
+    });
+
+  }else{
+
+    enemies.push({
+      type,
+      x,
+      y:H-150,
+      w:60,
+      h:70,
+      hp:6+world,
+      maxHp:6+world,
+      vx:-1
+    });
+  }
+}
+
+/* =========================
+   COINS / GEMS
+========================= */
+
+function spawnCoin(){
+
+  coins.push({
+    x:player.x+W+Math.random()*150,
+    y:H-180-Math.random()*200,
+    r:9,
+    rot:0
+  });
+}
+
+function spawnGem(){
+
+  gems.push({
+    x:player.x+W+Math.random()*200,
+    y:H-200-Math.random()*180,
+    r:12,
+    rot:0
+  });
+}
+
+/* =========================
+   POWERUPS
+========================= */
+
+function spawnPower(){
+
+  const types=["shield","speed","magnet","health"];
+
+  powerups.push({
+    x:player.x+W+100,
+    y:H-220-Math.random()*180,
+    type:types[Math.floor(Math.random()*types.length)],
+    r:15
+  });
+}
+
+/* =========================
+   BOSS
+========================= */
+
+function spawnBoss(){
+
+  boss={
+    x:player.x+W+250,
+    y:H-310,
+    w:125,
+    h:150,
+    hp:35+world*7,
+    maxHp:35+world*7,
+    vx:-.5,
+    attack:100
+  };
+
+  document.getElementById("bossWrap").style.display="block";
+
+  showMessage("👑 BOSS BATTLE!",160);
+}
+
+/* =========================
+   COLLISION
+========================= */
+
+function hit(a,b){
+
+  return(
+    a.x<a.x+a.w &&
+    a.x+a.w>b.x &&
+    a.y<a.y+a.h &&
+    a.y+a.h>b.y &&
+    a.x<b.x+b.w &&
+    a.y<b.y+b.h
+  );
+}
+
+function rectHit(a,b){
+
+  return(
+    a.x<b.x+b.w &&
+    a.x+a.w>b.x &&
+    a.y<b.y+b.h &&
+    a.y+a.h>b.y
+  );
+}
+
+/* =========================
+   PARTICLES
+========================= */
+
+function burst(x,y,color,count=12){
+
+  for(let i=0;i<count;i++){
+
+    particles.push({
+      x,
+      y,
+      vx:(Math.random()-.5)*8,
+      vy:(Math.random()-.5)*8,
+      life:30+Math.random()*30,
+      max:60,
+      color,
+      size:2+Math.random()*4
+    });
+  }
+}
+
+/* =========================
+   UPDATE
+========================= */
+
+function update(){
+
+  if(!running||paused||gameOver)return;
+
+  distance++;
+
+  score+=.08;
+
+  world=1+Math.floor(distance/2500);
+
+  speed=5+world*.25;
+
+  /* PLAYER */
+
+  player.vx=0;
+
+  if(keys.arrowleft||keys.a)
+    player.vx=-player.baseSpeed;
+
+  if(keys.arrowright||keys.d)
+    player.vx=player.baseSpeed;
+
+  player.vy+=.65;
+
+  player.x+=player.vx;
+  player.y+=player.vy;
+
+  if(player.x<50)player.x=50;
+
+  if(player.attackCooldown>0)
+    player.attackCooldown--;
+
+  if(player.invincible>0)
+    player.invincible--;
+
+  /* PLATFORMS */
+
+  player.grounded=false;
+
+  for(const p of platforms){
+
+    if(
+      player.x+player.w>p.x &&
+      player.x<p.x+p.w &&
+      player.y+player.h<=p.y+10 &&
+      player.y+player.h+player.vy>=p.y
+    ){
+
+      player.y=p.y-player.h;
+      player.vy=0;
+      player.grounded=true;
+      player.jumps=0;
+    }
+  }
+
+  /* FALL */
+
+  if(player.y>H+100){
+    damagePlayer(1);
+    player.y=H-250;
+    player.vy=0;
+  }
+
+  /* CAMERA */
+
+  const target=player.x-W*.25;
+
+  if(target>cameraX)
+    cameraX+=(target-cameraX)*.08;
+
+  /* SPAWNING */
+
+  enemyTimer--;
+
+  if(enemyTimer<=0){
+
+    spawnEnemy();
+
+    enemyTimer=Math.max(
+      35,
+      90-world*3
+    );
+  }
+
+  coinTimer--;
+
+  if(coinTimer<=0){
+
+    spawnCoin();
+
+    if(Math.random()<.13)
+      spawnGem();
+
+    coinTimer=25+Math.random()*50;
+  }
+
+  powerTimer--;
+
+  if(powerTimer<=0){
+
+    spawnPower();
+
+    powerTimer=700+Math.random()*700;
+  }
+
+  /* BOSS */
+
+  if(!boss && world>1 && world%3===0 && Math.floor(distance)%2500<2)
+    spawnBoss();
+
+  /* ENEMIES */
+
+  for(let i=enemies.length-1;i>=0;i--){
+
+    const e=enemies[i];
+
+    e.x+=e.vx-speed*.12;
+
+    if(e.type==="flyer")
+      e.y+=Math.sin(distance*.04+i)*1.5;
+
+    if(rectHit(player,e))
+      damagePlayer(1);
+
+    if(e.x+e.w<cameraX-100)
+      enemies.splice(i,1);
+  }
+
+  /* PROJECTILES */
+
+  for(let i=projectiles.length-1;i>=0;i--){
+
+    const p=projectiles[i];
+
+    p.x+=p.vx;
+    p.life--;
+
+    let removed=false;
+
+    for(let j=enemies.length-1;j>=0;j--){
+
+      const e=enemies[j];
+
+      const pb={
+        x:p.x,
+        y:p.y,
+        w:14,
+        h:5
+      };
+
+      if(rectHit(pb,e)){
+
+        e.hp-=p.damage;
+
+        burst(p.x,p.y,"#79eaff",5);
+
+        removed=true;
+
+        if(e.hp<=0){
+
+          score+=150;
+
+          burst(
+            e.x+e.w/2,
+            e.y+e.h/2,
+            "#ff5577",
+            18
+          );
+
+          if(Math.random()<.5)
+            coins.push({
+              x:e.x,
+              y:e.y,
+              r:9,
+              rot:0
+            });
+
+          enemies.splice(j,1);
+        }
+
+        break;
+      }
+    }
+
+    if(boss&&!removed){
+
+      const pb={
+        x:p.x,
+        y:p.y,
+        w:14,
+        h:5
+      };
+
+      if(rectHit(pb,boss)){
+
+        boss.hp-=p.damage;
+
+        burst(p.x,p.y,"#ff5d91",6);
+
+        removed=true;
+
+        if(boss.hp<=0)
+          defeatBoss();
+      }
+    }
+
+    if(removed||p.life<=0)
+      projectiles.splice(i,1);
+  }
+
+  /* COINS */
+
+  for(let i=coins.length-1;i>=0;i--){
+
+    const c=coins[i];
+
+    c.rot+=.1;
+
+    if(
+      Math.abs(
+        player.x+player.w/2-c.x
+      )<30 &&
+      Math.abs(
+        player.y+player.h/2-c.y
+      )<40
+    ){
+
+      runCoins++;
+      score+=40;
+
+      burst(c.x,c.y,"#ffd84d",10);
+
+      coins.splice(i,1);
+    }
+  }
+
+  /* GEMS */
+
+  for(let i=gems.length-1;i>=0;i--){
+
+    const g=gems[i];
+
+    g.rot+=.08;
+
+    if(
+      Math.abs(player.x+player.w/2-g.x)<35 &&
+      Math.abs(player.y+player.h/2-g.y)<45
+    ){
+
+      runCoins+=5;
+      score+=250;
+
+      burst(g.x,g.y,"#68e9ff",15);
+
+      gems.splice(i,1);
+    }
+  }
+
+  /* POWERUPS */
+
+  for(let i=powerups.length-1;i>=0;i--){
+
+    const p=powerups[i];
+
+    if(
+      Math.abs(player.x+player.w/2-p.x)<35 &&
+      Math.abs(player.y+player.h/2-p.y)<50
+    ){
+
+      collectPower(p.type);
+
+      burst(p.x,p.y,"#b977ff",18);
+
+      powerups.splice(i,1);
+    }
+  }
+
+  /* BOSS */
+
+  if(boss){
+
+    boss.x+=boss.vx;
+
+    boss.y+=Math.sin(distance*.025)*1.2;
+
+    boss.attack--;
+
+    if(boss.attack<=0){
+
+      projectiles.push({
+        x:boss.x,
+        y:boss.y+boss.h/2,
+        vx:-7,
+        life:100,
+        damage:1
+      });
+
+      boss.attack=90;
+    }
+
+    if(rectHit(player,boss))
+      damagePlayer(1);
+
+    const hp=Math.max(
+      0,
+      boss.hp/boss.maxHp*100
+    );
+
+    document.getElementById("bossHP").style.width=hp+"%";
+  }
+
+  /* PARTICLES */
+
+  for(let i=particles.length-1;i>=0;i--){
+
+    const p=particles[i];
+
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.vx*=.97;
+    p.vy*=.97;
+    p.life--;
+
+    if(p.life<=0)
+      particles.splice(i,1);
+  }
+
+  /* WORLD PROGRESS */
+
+  if(Math.floor(distance)%2500===0)
+    showMessage("🌎 WORLD "+world,100);
+
+  updateHUD();
+
+  saveGame();
+}
+
+/* =========================
+   DAMAGE
+========================= */
+
+function damagePlayer(amount){
+
+  if(player.invincible>0)return;
+
+  if(player.power==="shield"&&player.powerTimer>0){
+
+    player.powerTimer=0;
+    player.power=null;
+
+    burst(
+      player.x+player.w/2,
+      player.y+player.h/2,
+      "#66eaff",
+      20
+    );
+
+    return;
+  }
+
+  player.hp-=amount;
+
+  player.invincible=70;
+
+  burst(
+    player.x+player.w/2,
+    player.y+player.h/2,
+    "#ff405d",
+    15
+  );
+
+  if(player.hp<=0)
+    endGame();
+}
+
+/* =========================
+   POWERUPS
+========================= */
+
+function collectPower(type){
+
+  if(type==="health"){
+
+    player.hp=Math.min(
+      player.maxHp,
+      player.hp+1
+    );
+
+    showMessage("❤️ HEALTH +1",70);
+  }
+
+  if(type==="shield"){
+
+    player.power="shield";
+    player.powerTimer=600;
+
+    showMessage("🛡 SHIELD",70);
+  }
+
+  if(type==="speed"){
+
+    player.power="speed";
+    player.powerTimer=600;
+
+    showMessage("⚡ SPEED BOOST",70);
+  }
+
+  if(type==="magnet"){
+
+    player.power="magnet";
+    player.powerTimer=600;
+
+    showMessage("🧲 COIN MAGNET",70);
+  }
+}
+
+/* =========================
+   BOSS DEFEAT
+========================= */
+
+function defeatBoss(){
+
+  score+=1500;
+  runCoins+=20;
+
+  burst(
+    boss.x+boss.w/2,
+    boss.y+boss.h/2,
+    "#ff4f8b",
+    70
+  );
+
+  showMessage("👑 BOSS DEFEATED! +20 🪙",180);
+
+  boss=null;
+
+  document.getElementById("bossWrap").style.display="none";
+}
+
+/* =========================
+   HUD
+========================= */
+
+function updateHUD(){
+
+  document.getElementById("healthText").textContent=
+    Math.max(0,player?.hp||0);
+
+  document.getElementById("scoreText").textContent=
+    Math.floor(score);
+
+  document.getElementById("coinText").textContent=
+    runCoins;
+
+  document.getElementById("worldText").textContent=
+    world;
+}
+
+/* =========================
+   MESSAGE
+========================= */
+
+function showMessage(text,time=100){
+
+  const el=document.getElementById("message");
+
+  el.textContent=text;
+  messageTimer=time;
+
+  const timer=setInterval(()=>{
+
+    messageTimer--;
+
+    if(messageTimer<=0){
+
+      el.textContent="";
+      clearInterval(timer);
+    }
+
+  },16);
+}
+
+/* =========================
+   DRAW
+========================= */
+
+function draw(){
+
+  ctx.clearRect(0,0,W,H);
+
+  /* SKY */
+
+  const grad=ctx.createLinearGradient(0,0,0,H);
+
+  grad.addColorStop(0,"#050718");
+  grad.addColorStop(.55,"#11102c");
+  grad.addColorStop(1,"#24113a");
+
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,W,H);
+
+  /* STARS */
+
+  for(let i=0;i<100;i++){
+
+    const x=(
+      i*137-cameraX*.15
+    )%W;
+
+    const y=(i*71)%H;
+
+    ctx.fillStyle=i%4===0
+      ?"rgba(160,210,255,.9)"
+      :"rgba(255,255,255,.45)";
+
+    ctx.fillRect(
+      x<0?x+W:x,
+      y,
+      i%3+1,
+      i%3+1
+    );
+  }
+
+  /* MOON / PLANET */
+
+  ctx.beginPath();
+
+  ctx.arc(
+    W*.82,
+    H*.20,
+    70+world*3,
+    0,
+    Math.PI*2
+  );
+
+  ctx.fillStyle="#251d58";
+  ctx.shadowBlur=30;
+  ctx.shadowColor="#765cff";
+  ctx.fill();
+
+  ctx.shadowBlur=0;
+
+  ctx.save();
+
+  ctx.translate(-cameraX,0);
+
+  /* PLATFORMS */
+
+  for(const p of platforms){
+
+    if(p.x+p.w<cameraX-100||
+       p.x>cameraX+W+100)continue;
+
+    ctx.fillStyle="#17152c";
+    ctx.fillRect(p.x,p.y,p.w,p.h);
+
+    ctx.fillStyle="#59478d";
+    ctx.fillRect(p.x,p.y,p.w,5);
+
+    ctx.fillStyle="#30264f";
+
+    for(let x=p.x+15;x<p.x+p.w;x+=35)
+      ctx.fillRect(x,p.y+12,18,5);
+  }
+
+  /* COINS */
+
+  for(const c of coins){
+
+    ctx.save();
+
+    ctx.translate(c.x,c.y);
+    ctx.rotate(c.rot);
+
+    ctx.fillStyle="#ffd84d";
+    ctx.shadowBlur=15;
+    ctx.shadowColor="#ffd84d";
+
+    ctx.beginPath();
+    ctx.arc(0,0,c.r,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+    ctx.shadowBlur=0;
+  }
+
+  /* GEMS */
+
+  for(const g of gems){
+
+    ctx.save();
+
+    ctx.translate(g.x,g.y);
+    ctx.rotate(g.rot);
+
+    ctx.fillStyle="#65eaff";
+    ctx.shadowBlur=18;
+    ctx.shadowColor="#65eaff";
+
+    ctx.beginPath();
+    ctx.moveTo(0,-g.r);
+    ctx.lineTo(g.r*.75,0);
+    ctx.lineTo(0,g.r);
+    ctx.lineTo(-g.r*.75,0);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+    ctx.shadowBlur=0;
+  }
+
+  /* POWERUPS */
+
+  for(const p of powerups){
+
+    const colors={
+      shield:"#64eaff",
+      speed:"#ffdf4d",
+      magnet:"#d278ff",
+      health:"#ff5d79"
+    };
+
+    ctx.fillStyle=colors[p.type];
+
+    ctx.shadowBlur=20;
+    ctx.shadowColor=colors[p.type];
+
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r+Math.sin(distance*.1)*3,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.shadowBlur=0;
+
+    ctx.fillStyle="#07101c";
+    ctx.font="15px Arial";
+    ctx.textAlign="center";
+
+    const icons={
+      shield:"🛡",
+      speed:"⚡",
+      magnet:"🧲",
+      health:"♥"
+    };
+
+    ctx.fillText(icons[p.type],p.x,p.y+5);
+  }
+
+  /* ENEMIES */
+
+  for(const e of enemies){
+
+    ctx.save();
+
+    ctx.translate(e.x,e.y);
+
+    let color="#d84b67";
+
+    if(e.type==="flyer")color="#a05cff";
+    if(e.type==="brute")color="#ff9b38";
+
+    ctx.fillStyle=color;
+    ctx.shadowBlur=18;
+    ctx.shadowColor=color;
+
+    if(e.type==="flyer"){
+
+      ctx.beginPath();
+      ctx.moveTo(e.w/2,0);
+      ctx.lineTo(e.w,e.h*.6);
+      ctx.lineTo(e.w/2,e.h);
+      ctx.lineTo(0,e.h*.6);
+      ctx.closePath();
+      ctx.fill();
+
+    }else{
+
+      ctx.fillRect(0,0,e.w,e.h);
+
+      ctx.fillStyle="#fff";
+      ctx.fillRect(
+        e.w*.2,
+        e.h*.25,
+        7,
+        7
+      );
+
+      ctx.fillRect(
+        e.w*.65,
+        e.h*.25,
+        7,
+        7
+      );
+    }
+
+    ctx.restore();
+    ctx.shadowBlur=0;
+  }
+
+  /* BOSS */
+
+  if(boss){
+
+    ctx.save();
+
+    ctx.translate(boss.x,boss.y);
+
+    ctx.fillStyle="#7b164f";
+    ctx.shadowBlur=35;
+    ctx.shadowColor="#ff237d";
+
+    ctx.beginPath();
+    ctx.moveTo(boss.w/2,0);
+    ctx.lineTo(boss.w,50);
+    ctx.lineTo(boss.w*.82,boss.h);
+    ctx.lineTo(boss.w*.18,boss.h);
+    ctx.lineTo(0,50);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle="#ffcced";
+
+    ctx.beginPath();
+    ctx.arc(
+      boss.w*.35,
+      boss.h*.35,
+      10,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(
+      boss.w*.65,
+      boss.h*.35,
+      10,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.restore();
+
+    ctx.shadowBlur=0;
+  }
+
+  /* PROJECTILES */
+
+  for(const p of projectiles){
+
+    ctx.fillStyle="#72f6ff";
+    ctx.shadowBlur=15;
+    ctx.shadowColor="#72f6ff";
+
+    ctx.fillRect(
+      p.x,
+      p.y,
+      18,
+      5
+    );
+
+    ctx.shadowBlur=0;
+  }
+
+  /* PLAYER */
+
+  if(player){
+
+    ctx.save();
+
+    ctx.translate(
+      player.x,
+      player.y
+    );
+
+    if(player.invincible%10<5)
+      ctx.globalAlpha=.45;
+
+    ctx.fillStyle=player.color;
+
+    ctx.shadowBlur=25;
+    ctx.shadowColor=player.glow;
+
+    ctx.beginPath();
+    ctx.moveTo(player.w/2,0);
+    ctx.lineTo(player.w,player.h);
+    ctx.lineTo(player.w/2,player.h-12);
+    ctx.lineTo(0,player.h);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle="#10162f";
+
+    ctx.fillRect(
+      player.w*.28,
+      player.h*.38,
+      player.w*.44,
+      player.h*.28
+    );
+
+    ctx.restore();
+
+    ctx.shadowBlur=0;
+  }
+
+  /* PARTICLES */
+
+  for(const p of particles){
+
+    ctx.globalAlpha=Math.max(
+      0,
+      p.life/p.max
+    );
+
+    ctx.fillStyle=p.color;
+
+    ctx.fillRect(
+      p.x,
+      p.y,
+      p.size,
+      p.size
+    );
+  }
+
+  ctx.globalAlpha=1;
+
+  ctx.restore();
+}
+
+/* =========================
+   LOOP
+========================= */
+
+function loop(){
+
+  update();
+  draw();
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+
+/* =========================
+   MENU / SCREENS
+========================= */
+
+function closeScreens(){
+
+  document
+    .querySelectorAll(".screen")
+    .forEach(s=>s.classList.add("hidden"));
+
+  document.getElementById("menu").classList.remove("hidden");
+
+  updateMenu();
+}
+
+function goMenu(){
+
+  running=false;
+  paused=false;
+  gameOver=false;
+
+  document.getElementById("hud").classList.add("hidden");
+  document.getElementById("controls").classList.add("hidden");
+  document.getElementById("pauseScreen").classList.add("hidden");
+  document.getElementById("gameOver").classList.add("hidden");
+  document.getElementById("shopScreen").classList.add("hidden");
+  document.getElementById("characterScreen").classList.add("hidden");
+  document.getElementById("bossWrap").style.display="none";
+
+  document.getElementById("menu").classList.remove("hidden");
+
+  updateMenu();
+}
+
+function updateMenu(){
+
+  document.getElementById("menuCoins").textContent=save.coins;
+  document.getElementById("menuBest").textContent=save.best;
+}
+
+/* =========================
+   PAUSE
+========================= */
+
+function pauseGame(){
+
+  if(!running||gameOver)return;
+
+  paused=true;
+
+  document
+    .getElementById("pauseScreen")
+    .classList.remove("hidden");
+}
+
+function resumeGame(){
+
+  paused=false;
+
+  document
+    .getElementById("pauseScreen")
+    .classList.add("hidden");
+}
+
+/* =========================
+   RESTART
+========================= */
+
+function restartGame(){
+
+  document
+    .getElementById("gameOver")
+    .classList.add("hidden");
+
+  document
+    .getElementById("pauseScreen")
+    .classList.add("hidden");
+
+  startGame();
+}
+
+/* =========================
+   GAME OVER
+========================= */
+
+function endGame(){
+
+  running=false;
+  gameOver=true;
+
+  save.coins+=runCoins;
+
+  const final=Math.floor(score);
+
+  if(final>save.best)
+    save.best=final;
+
+  saveGame();
+
+  document.getElementById("finalScore").textContent=final;
+  document.getElementById("finalCoins").textContent=runCoins;
+  document.getElementById("finalBest").textContent=save.best;
+
+  document.getElementById("hud").classList.add("hidden");
+  document.getElementById("controls").classList.add("hidden");
+
+  document
+    .getElementById("gameOver")
+    .classList.remove("hidden");
+}
+
+/* =========================
+   SHOP
+========================= */
+
+function openShop(){
+
+  document.getElementById("menu").classList.add("hidden");
+
+  document.getElementById("shopScreen").classList.remove("hidden");
+
+  updateShop();
+}
+
+function updateShop(){
+
+  document.getElementById("shopCoins").textContent=save.coins;
+
+  document.getElementById("shopHealth").textContent=save.health;
+  document.getElementById("shopSpeed").textContent=save.speed;
+  document.getElementById("shopAttack").textContent=save.attack;
+  document.getElementById("shopShield").textContent=save.shield;
+}
+
+function buyUpgrade(type){
+
+  const level=save[type];
+
+  const costs={
+    health:150*level,
+    speed:120*level,
+    attack:180*level,
+    shield:220*level
+  };
+
+  const cost=costs[type];
+
+  if(save.coins<cost){
+
+    alert("Not enough coins! 🪙");
+
+    return;
+  }
+
+  save.coins-=cost;
+  save[type]++;
+
+  saveGame();
+
+  updateShop();
+}
+
+/* =========================
+   CHARACTERS
+========================= */
+
+function openCharacters(){
+
+  document.getElementById("menu").classList.add("hidden");
+
+  document
+    .getElementById("characterScreen")
+    .classList.remove("hidden");
+}
+
+function selectCharacter(id){
+
+  const costs=[0,300,700];
+
+  if(save.unlocked.includes(id)){
+
+    save.character=id;
+    saveGame();
+
+    alert("Character selected! 🎭");
+
+    return;
+  }
+
+  if(save.coins<costs[id]){
+
+    alert("Not enough coins! 🪙");
+
+    return;
+  }
+
+  save.coins-=costs[id];
+
+  save.unlocked.push(id);
+  save.character=id;
+
+  saveGame();
+
+  alert("Character unlocked! 🔓");
+}
+
+/* =========================
+   AUTO COIN MAGNET
+========================= */
+
+setInterval(()=>{
+
+  if(
+    running &&
+    player &&
+    player.power==="magnet" &&
+    player.powerTimer>0
+  ){
+
+    for(const c of coins){
+
+      const dx=player.x-c.x;
+      const dy=player.y-c.y;
+
+      const d=Math.sqrt(dx*dx+dy*dy);
+
+      if(d<280){
+
+        c.x+=dx/d*5;
+        c.y+=dy/d*5;
+      }
+    }
+
+    player.powerTimer--;
+
+    if(player.powerTimer<=0)
+      player.power=null;
+  }
+
+  if(
+    running &&
+    player &&
+    player.power==="speed" &&
+    player.powerTimer>0
+  ){
+
+    player.powerTimer--;
+
+    if(player.powerTimer<=0)
+      player.power=null;
+  }
+
+  if(
+    running &&
+    player &&
+    player.power==="shield" &&
+    player.powerTimer>0
+  ){
+
+    player.powerTimer--;
+
+    if(player.powerTimer<=0)
+      player.power=null;
+  }
+
+},16);
+
+/* =========================
+   INITIAL MENU
+========================= */
+
+updateMenu();
+</script>
+
+</body>
+</html>
